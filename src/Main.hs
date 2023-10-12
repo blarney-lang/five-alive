@@ -577,7 +577,7 @@ makeMicrocontroller avlUARTIns = mdo
   let useForwarding = False
   -- Use branch target prediction?
   let useBranchPred = False
-  -- 4KiB each for instruction memory and data memory
+  -- 16KiB each for instruction memory and data memory
   -- (We assume these are the same size to avoid explicit memory mapping)
   imem <- makeITCM 12 "imem.mif"
   dmem <- makeDTCM 12 "dmem.mif"
