@@ -36,9 +36,15 @@ class JTAGUART {
   void open(int id) {
     char sockName[1024];
     snprintf(sockName, sizeof(sockName), "jtaguart%d", id);
-    sock = socketConnect(sockName);
+    int retries = 10;
+    while (retries > 0) {
+      sock = socketConnect(sockName);
+      if (sock >= 0) break;
+      usleep(1000);
+      retries--;
+    }
     if (sock < 0) {
-      fprintf(stderr, "Please check that the simulator is running\n");
+      fprintf(stderr, "Can't connect to simulator\n");
       exit(EXIT_FAILURE);
     }
   }

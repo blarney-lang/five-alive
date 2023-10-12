@@ -133,7 +133,6 @@ int socketConnect(const char* socketName)
   int ret = connect(sock, (struct sockaddr *) &addr,
               sizeof(struct sockaddr_un));
   if (ret < 0) {
-    perror("connect");
     return -1;
   }
 

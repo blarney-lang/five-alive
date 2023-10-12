@@ -16,13 +16,20 @@ sim: Main.cpp ../FiveAlive.v imem.hex dmem.hex
 	cp dmem.hex dmem.mif
 
 ../FiveAlive.v:
-	cd $(FIVEALIVE_ROOT) && cabal run
+	cd $(FIVEALIVE_ROOT) && cabal run --verbose=0
 
 imem.hex:
 	make -C $(BOOT)
 
 dmem.hex:
 	make -C $(BOOT)
+
+.PHONY: run
+run: sim
+	@./sim &
+	@make -s -C $(FIVEALIVE_ROOT)/software dump-sim
+	@killall sim
+	
 
 .PHONY: clean 
 clean:

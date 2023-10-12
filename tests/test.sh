@@ -28,7 +28,6 @@ for FILE in I/*.S; do
   cp I/$TEST.cpu.code.hex imem.mif
   cp I/$TEST.cpu.data.hex dmem.mif
   ./sim &
-  sleep 0.1
   PID=$!
   ./getresult
   kill $PID 2> /dev/null

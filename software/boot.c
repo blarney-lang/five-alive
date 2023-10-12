@@ -11,6 +11,7 @@ int puts(const char* s)
 {
   int count = 0;
   while (*s) { putchar(*s); s++; count++; }
+  putchar('\n');
   return count;
 }
 
