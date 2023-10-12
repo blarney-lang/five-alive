@@ -210,15 +210,15 @@ data AddIns =
     -- Do subtraction/comparison rather than addition?
   , addSub :: Bit 1
     -- Operands
-  , addOpA :: Bit 32
-  , addOpB :: Bit 32
+  , addOpA :: Bit XLen
+  , addOpB :: Bit XLen
   }
 
 -- Outputs
 data AddOuts =
   AddOuts {
     -- Output of adder
-    addSum :: Bit 32
+    addSum :: Bit XLen
     -- Result of comparison (assuming addSub was true)
   , addLessThan :: Bit 1
   , addEqual :: Bit 1
@@ -258,20 +258,22 @@ data CSRUnit =
 -- =====================
 
 -- Instruction set interface
-instrSet :: CSRUnit -> InstrSet XLen ILen Instr LogRegs MemReq
-instrSet csrUnit =
+instrSet ::
+  CSRUnit -> Reg (Bit XLen) -> InstrSet XLen ILen Instr LogRegs MemReq
+instrSet csrUnit instrCount =
   InstrSet {
     getDest      = \i -> i.rd
   , getSrcs      = \i -> [i.rs1, i.rs2]
   , numSrcs      = 2
   , isMemAccess  = \i -> i.isMemAccess
   , decode       = decodeInstr
-  , makeExecUnit = makeRV32IExecUnit csrUnit
+  , makeExecUnit = makeRV32IExecUnit csrUnit instrCount
   }
 
 -- Execution unit
-makeRV32IExecUnit :: CSRUnit -> Module (ExecUnit XLen Instr MemReq)
-makeRV32IExecUnit csrUnit = return (ExecUnit issue)
+makeRV32IExecUnit ::
+  CSRUnit -> Reg (Bit XLen) -> Module (ExecUnit XLen Instr MemReq)
+makeRV32IExecUnit csrUnit instrCount = return (ExecUnit issue)
   where
     issue instr s = do
       -- Operands
@@ -384,6 +386,9 @@ makeRV32IExecUnit csrUnit = return (ExecUnit issue)
           , accessWidth = instr.accessWidth
           , isUnsigned = instr.isUnsigned
           }
+
+      -- Increment instruction counter
+      instrCount <== instrCount.val + 1
 
 -- Memory alignment helpers
 -- ========================
@@ -536,6 +541,10 @@ makeDTCM logSize initFile =
 
 -- Create a RISC-V CSR unit with the following CSRs:
 --
+-- Cycle (0xc00): Cycle counter.
+-- 
+-- InstRet (0xc02): Instruction counter.
+--
 -- UARTRead (0x800): Reading from this yields a byte from the UART in
 -- bits [7:0], while bit 8 contains whether the byte is present or not.
 --
@@ -543,9 +552,13 @@ makeDTCM logSize initFile =
 -- whether the UART write buffer is not full. Writing to it
 -- inserts a byte into the buffer.
 
-makeCSRUnit :: Stream (Bit 8) -> Module (CSRUnit, Stream (Bit 8))
-makeCSRUnit fromUART = do
+makeCSRUnit ::
+  Stream (Bit 8) -> Bit 32 -> Module (CSRUnit, Stream (Bit 8))
+makeCSRUnit fromUART instrCount = do
   writeBuffer <- makeShiftQueue 1
+
+  cycleCount <- makeReg 0
+  always do cycleCount <== cycleCount.val + 1
 
   let csrUnit =
         CSRUnit {
@@ -559,6 +572,8 @@ makeCSRUnit fromUART = do
                     csr .==. 0x800 -->
                       (0 # fromUART.canPeek # fromUART.peek)
                   , csr .==. 0x801 --> zeroExtend writeBuffer.notFull
+                  , csr .==. 0xc00 --> cycleCount.val
+                  , csr .==. 0xc02 --> instrCount
                   ]
             return result
         , write = \csr payload ->
@@ -585,12 +600,14 @@ makeMicrocontroller avlUARTIns = mdo
   rmem <- if useForwarding
             then makeForwardingRegMemRAM 2
             else makeRegMemRAM 2
+  -- Instruction counter
+  instrCount <- makeReg 0
   -- CSR unit
-  (csrUnit, toUART) <- makeCSRUnit fromUART
+  (csrUnit, toUART) <- makeCSRUnit fromUART instrCount.val
   -- JTAG UART
   (fromUART, avlUARTOuts) <- makeJTAGUART toUART avlUARTIns
   -- Instruction set
-  let iset = instrSet csrUnit
+  let iset = instrSet csrUnit instrCount
   -- Classic 5-stage pipeline
   s <- makeClassic
     PipelineParams {

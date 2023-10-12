@@ -3,10 +3,6 @@ FIVEALIVE_ROOT ?= $(realpath ../)
 # Common settings
 include $(FIVEALIVE_ROOT)/software/common.mk
 
-# RISC-V subset
-RV_ARCH = rv32i
-RV_ABI = ilp32
-
 # Location of simulator
 SIM = $(FIVEALIVE_ROOT)/sim
 

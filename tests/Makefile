@@ -4,10 +4,6 @@ IHEX_CONV = $(FIVEALIVE_ROOT)/software/ihex-to-img.py
 # Common settings
 include $(FIVEALIVE_ROOT)/software/common.mk
 
-# RISC-V subset
-RV_ARCH = rv32i
-RV_ABI = ilp32
-
 # Compiler setup
 CFLAGS += -I./inc
 

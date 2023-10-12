@@ -1,9 +1,12 @@
 # Compiler details
+RV_ARCH    = rv32i
+RV_ABI     = ilp32
 RV_CC      = riscv64-unknown-elf-gcc
 RV_LD      = riscv64-unknown-elf-ld
 RV_OBJCOPY = riscv64-unknown-elf-objcopy
 CFLAGS     = -mabi=$(RV_ABI) -march=$(RV_ARCH) -O2 \
-  -I $(FIVEALIVE_ROOT)/inc -nostdlib -fno-builtin
+  -I $(FIVEALIVE_ROOT)/inc -nostdlib -fno-builtin \
+  -ffreestanding -DTIME -DRISCV
 LDFLAGS    = -melf32lriscv -G 0
 
 # Size and base of instruction and data memories
