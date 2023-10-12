@@ -1,0 +1,35 @@
+#!/bin/bash
+
+SIM_DIR=../sim
+
+# On CTRL-C, call quit()
+trap quit INT
+function quit() {
+  echo
+  echo "Caught CTRL-C. Exiting."
+  kill $PID 2> /dev/null
+}
+
+# Build tests
+echo -n "Building tests... "
+make -s
+echo "done"
+
+# Build and copy simulator to current directory
+echo -n "Building simulator... "
+make -s -C $SIM_DIR > /dev/null
+cp $SIM_DIR/sim .
+echo done
+
+# For each test
+for FILE in I/*.S; do
+  TEST=$(basename $FILE .S)
+  echo -n "Testing $TEST... "
+  cp I/$TEST.cpu.code.hex imem.mif
+  cp I/$TEST.cpu.data.hex dmem.mif
+  ./sim &
+  sleep 0.1
+  PID=$!
+  ./getresult
+  kill $PID 2> /dev/null
+done

@@ -1,0 +1,53 @@
+cabal-version: 3.0
+name: five-alive
+version: 0.1.0.0
+
+flag enable-namer-plugin
+  description: Enable namer plugin
+  manual: True
+  default: False
+
+common five-alive-common
+  default-language: GHC2021
+  default-extensions:
+    AllowAmbiguousTypes
+    BlockArguments
+    DataKinds
+    DeriveAnyClass
+    DerivingStrategies
+    DuplicateRecordFields
+    MultiWayIf
+    NoImplicitPrelude
+    NoStarIsType
+    OverloadedRecordDot
+    OverloadedLabels
+    PartialTypeSignatures
+    RebindableSyntax
+    RecordWildCards
+    RecursiveDo
+    TypeFamilies
+    NoFieldSelectors
+  ghc-options:
+    -Wno-partial-type-signatures
+  if flag(enable-namer-plugin)
+    build-depends:
+      blarney-plugins-namer
+    ghc-options:
+      -fplugin BlarneyPlugins.Namer
+  build-depends:
+      base
+    , blarney
+
+executable five-alive-gen
+  import: five-alive-common
+  main-is: Main.hs
+  other-modules: FiveAlive.JTAGUART
+  hs-source-dirs: src
+  build-depends: blarney-five
+
+--test-suite five-alive-tests
+--  import: five-alive-common
+--  type: exitcode-stdio-1.0
+--  main-is: Tests.hs
+--  hs-source-dirs: tests
+--  build-depends: blarney-five

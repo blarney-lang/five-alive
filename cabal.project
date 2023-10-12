@@ -1,0 +1,14 @@
+packages: .
+
+source-repository-package
+  type: git
+  location: https://github.com/blarney-lang/blarney.git
+  tag: master
+  subdir: . Haskell/BlarneyPlugins/Namer/
+
+source-repository-package
+  type: git
+  --location: https://github.com/blarney-lang/five.git
+  location: git@github.com:blarney-lang/five.git
+  tag: main
+  subdir: .
