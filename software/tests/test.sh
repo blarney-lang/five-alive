@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SIM_DIR=../sim
+SIM_DIR=../../sim
 
 # On CTRL-C, call quit()
 trap quit INT

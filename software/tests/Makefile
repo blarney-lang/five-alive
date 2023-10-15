@@ -1,8 +1,7 @@
-FIVEALIVE_ROOT ?= $(realpath ../)
-IHEX_CONV = $(FIVEALIVE_ROOT)/software/ihex-to-img.py
+FIVEALIVE_ROOT ?= $(realpath ../../)
 
 # Common settings
-include $(FIVEALIVE_ROOT)/software/common.mk
+include $(FIVEALIVE_ROOT)/software/common/common.mk
 
 # Compiler setup
 CFLAGS += -I./inc

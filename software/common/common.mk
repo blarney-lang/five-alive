@@ -1,10 +1,16 @@
+# Common files used
+IHEX_CONV = $(FIVEALIVE_ROOT)/software/common/ihex-to-img.py
+LINK_LD = $(FIVEALIVE_ROOT)/software/common/link.ld
+DUMP_CPP = $(FIVEALIVE_ROOT)/software/common/dump.cpp
+ENTRY_S = $(FIVEALIVE_ROOT)/software/common/entry.S
+
 # Compiler details
 RV_ARCH    = rv32i
 RV_ABI     = ilp32
 RV_CC      = riscv64-unknown-elf-gcc
 RV_LD      = riscv64-unknown-elf-ld
 RV_OBJCOPY = riscv64-unknown-elf-objcopy
-CFLAGS     = -mabi=$(RV_ABI) -march=$(RV_ARCH) -O2 \
+CFLAGS    += -mabi=$(RV_ABI) -march=$(RV_ARCH) -O2 \
   -I $(FIVEALIVE_ROOT)/inc -nostdlib -fno-builtin \
   -ffreestanding -DTIME -DRISCV
 LDFLAGS    = -melf32lriscv -G 0
