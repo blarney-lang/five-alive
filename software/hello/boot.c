@@ -18,6 +18,5 @@ int puts(const char* s)
 int main()
 {
   puts("Hello, World!");
-  putchar('\0');
   return 0;
 }

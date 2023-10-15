@@ -56,10 +56,11 @@ hl-dump-fpga: checkenv $(DUMP_CPP)
 
 .PHONY: run
 run: all hl-dump-sim
+	@(killall five-alive-sim || true) 2> /dev/null
 	@make -s -C $(FIVEALIVE_ROOT)/sim
-	@cd sim-files && $(FIVEALIVE_ROOT)/sim/sim &
+	@cd sim-files && $(FIVEALIVE_ROOT)/sim/five-alive-sim &
 	@./hl-dump-sim
-	@killall sim
+	@(killall five-alive-sim || true) 2> /dev/null
 
 .PHONY: clean
 clean:

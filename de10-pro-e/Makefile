@@ -1,4 +1,5 @@
 FIVEALIVE_ROOT ?= $(realpath ..)
+SOFTWARE ?= $(FIVEALIVE_ROOT)/software/hello
 NUM_SEEDS ?= 8
 HOSTLINK_CABLE_ID ?= 1
 QPF = DE10_Pro.qpf
@@ -20,10 +21,12 @@ many: checkenv ../FiveAlive.v imem.mif dmem.mif
 	make -C $(FIVEALIVE_ROOT)
 
 imem.mif:
-	make -C $(FIVEALIVE_ROOT)/software
+	make -C $(SOFTWARE)
+	cp $(SOFTWARE)/fpga-files/imem.mif .
 
 dmem.mif:
-	make -C $(FIVEALIVE_ROOT)/software
+	make -C $(SOFTWARE)
+	cp $(SOFTWARE)/fpga-files/dmem.mif .
 
 .PHONY: report
 report: checkenv

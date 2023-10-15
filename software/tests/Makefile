@@ -43,4 +43,4 @@ getresult: getresult.cpp
 
 .PHONY: clean
 clean:
-	@rm -f *.o I/*.o I/*.elf I/*.hex *.mif sim getresult
+	@rm -f *.o I/*.o I/*.elf I/*.hex *.mif five-alive-sim getresult

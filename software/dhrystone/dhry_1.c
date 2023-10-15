@@ -307,7 +307,6 @@ main ()
     printf ("%6.1f \n", Microseconds);
     printf ("Dhrystones per Second:                      ");
     printf ("%6.1f \n", Dhrystones_Per_Second);
-    printf_c('\0');
   }
 #endif
 

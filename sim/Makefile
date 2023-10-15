@@ -4,13 +4,13 @@ SIM_CFLAGS = -I $(FIVEALIVE_ROOT)/inc \
              -I $(FIVEALIVE_ROOT)/sim \
              -fmax-errors=1
 
-sim: Main.cpp ../FiveAlive.v
+file-alive-sim: Main.cpp ../FiveAlive.v
 	verilator -cc ../FiveAlive.v -exe Main.cpp -o sim \
     -Wno-UNSIGNED -Wno-CMPCONST -y $(FIVEALIVE_ROOT)/src/ \
     --x-assign unique --x-initial unique \
     -CFLAGS "$(SIM_CFLAGS)"
 	make -C obj_dir -j -f VFiveAlive.mk sim
-	cp obj_dir/sim .
+	cp obj_dir/sim five-alive-sim
 	rm -rf obj_dir
 
 ../FiveAlive.v:
@@ -18,4 +18,4 @@ sim: Main.cpp ../FiveAlive.v
 
 .PHONY: clean 
 clean:
-	rm -rf sim obj_dir
+	rm -rf five-alive-sim obj_dir

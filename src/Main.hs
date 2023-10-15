@@ -589,9 +589,9 @@ makeCSRUnit fromUART instrCount = do
 makeMicrocontroller :: AvalonJTAGUARTIns -> Module AvalonJTAGUARTOuts
 makeMicrocontroller avlUARTIns = mdo
   -- Use register forwarding?
-  let useForwarding = False
+  let useForwarding = True
   -- Use branch target prediction?
-  let useBranchPred = False
+  let useBranchPred = True
   -- 16KiB each for instruction memory and data memory
   -- (We assume these are the same size to avoid explicit memory mapping)
   imem <- makeITCM 12 "imem.mif"
