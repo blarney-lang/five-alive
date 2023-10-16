@@ -31,9 +31,9 @@ working).
 
 On Ubuntu 22.04, we can do:
 ```sh
-$ sudo apt install verilator
-$ sudo apt install gcc-riscv64-unknown-elf
-$ sudo apt install libgmp-dev
+sudo apt install verilator
+sudo apt install gcc-riscv64-unknown-elf
+sudo apt install libgmp-dev
 ```
 
 For GHC 9.4.5, [ghcup](https://www.haskell.org/ghcup/) can be used.
@@ -52,7 +52,7 @@ Inside the repo, there are various things to try.  For example, to
 generate the `FiveAlive.v` synthesisable verilog:
 
 ```sh
-$ cabal run
+cabal run
 ```
 
 To run "hello world" in simulation:
@@ -72,23 +72,23 @@ make run
 To run the test suite in simulation:
 
 ```sh
-$ cd software/tests
-$ ./test.sh
+cd software/tests
+./test.sh
 ```
 
 To run the Dhrystone benchmark on the [DE10-Pro
 revE](http://de10-pro.terasic.com) board:
 
 ```sh
-$ cd de10-pro-e
-$ make FIRMWARE=../software/dhrystone # Assumes quartus in PATH
-$ make download-sof                   # Assumes DE10-Pro revE connected via USB
-$ make run                            # Dump output from FPGA
+cd de10-pro-e
+make FIRMWARE=../software/dhrystone # Assumes quartus in PATH
+make download-sof                   # Assumes DE10-Pro revE connected via USB
+make run                            # Dump output from FPGA
 ```
 
 Or, if you are feeling brave, simply:
 
 ```sh
-$ cd de10-pro-e
-$ make FIRMWARE=../software/dhrystone run
+cd de10-pro-e
+make FIRMWARE=../software/dhrystone run
 ```
