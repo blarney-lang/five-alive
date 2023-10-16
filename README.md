@@ -36,8 +36,11 @@ $ sudo apt install libgmp-dev
 ```
 
 For GHC 9.2.1 or later, [ghcup](https://www.haskell.org/ghcup/) can be
-used. If you're working in simulation only, and have trouble meeting
-any of the dependencies, you can simply enter a docker shell:
+used.
+
+If you have trouble meeting any of the above dependencies, and are
+working only in simulation (not on FPGA), you can simply enter a
+docker shell:
 
 ```sh
 make shell
