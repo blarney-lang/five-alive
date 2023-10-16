@@ -1,17 +1,16 @@
 # FiveAlive
 
-FiveAlive is a 32-bit RV32I microcontroller implemented in Haskell
-using the [Blarney](https://github.com/blarney-lang/blarney) library.
-It is primarily intended as a demonstration of the generic
+FiveAlive is a 32-bit microcontroller implemented in Haskell using the
+[Blarney](https://github.com/blarney-lang/blarney) library.  It is
+primarily intended as a demonstration of the generic
 [Five](https://github.com/blarney-lang/five) processor pipeline.  It
 features:
 
   * RISC-V instruction set (RV32I) 
   * Formally verified five-stage pipeline
-  * Optional register forwarding
-  * Optional branch target prediction
+  * Optional register forwarding and branch target prediction
   * Throughput up to 0.92 IPC on Dhrystone
-  * Clock frequency well above 200MHz on Intel Stratix 10 FPGA
+  * Clock frequency above 200MHz on Intel Stratix 10 FPGA
   * Area requirement under 1000 ALMs
 
 FiveAlive was developed on the [CAPcelerate
