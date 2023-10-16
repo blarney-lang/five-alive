@@ -47,13 +47,6 @@ hl-dump-sim: $(DUMP_CPP)
 	@g++ -DSIMULATE -O2 -I $(FIVEALIVE_ROOT)/inc \
     -o hl-dump-sim $(DUMP_CPP)
 
-hl-dump-fpga: checkenv $(DUMP_CPP)
-	@g++ -std=c++11 -O2 -I $(FIVEALIVE_ROOT)/inc \
-    -o hl-dump-fpga $(DUMP_CPP) \
-    -fno-exceptions -ljtag_atlantic -lpthread \
-    -Wl,--no-as-needed -ljtag_client \
-    -L $(QUARTUS_ROOTDIR)/linux64/ -Wl,-rpath,$(QUARTUS_ROOTDIR)/linux64
-
 .PHONY: run
 run: all hl-dump-sim
 	@(killall five-alive-sim || true) 2> /dev/null
@@ -64,7 +57,7 @@ run: all hl-dump-sim
 
 .PHONY: clean
 clean:
-	rm -f *.o *.elf *.ihex hl-dump-fpga hl-dump-sim
+	rm -f *.o *.elf *.ihex hl-dump-sim
 	rm -rf sim-files fpga-files
 
 # Raise error if QUARTUS_ROOTDIR not set

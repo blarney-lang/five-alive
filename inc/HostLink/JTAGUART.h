@@ -36,11 +36,11 @@ class JTAGUART {
   void open(int id) {
     char sockName[1024];
     snprintf(sockName, sizeof(sockName), "jtaguart%d", id);
-    int retries = 10;
+    int retries = 100;
     while (retries > 0) {
       sock = socketConnect(sockName);
       if (sock >= 0) break;
-      usleep(1000);
+      usleep(10000);
       retries--;
     }
     if (sock < 0) {
