@@ -26,7 +26,8 @@ First, download the repo:
 git clone --recursive https://github.com/blarney-lang/five-alive
 ```
 
-We'll need Verilator, a RISC-V compiler, and GHC 9.2.1 or later.
+We'll need Verilator, a RISC-V compiler, and GHC (version 9.4.5 known
+working).
 
 On Ubuntu 22.04, we can do:
 ```sh
@@ -35,8 +36,7 @@ $ sudo apt install gcc-riscv64-unknown-elf
 $ sudo apt install libgmp-dev
 ```
 
-For GHC 9.2.1 or later, [ghcup](https://www.haskell.org/ghcup/) can be
-used.
+For GHC 9.4.5, [ghcup](https://www.haskell.org/ghcup/) can be used.
 
 If you have trouble meeting any of the above dependencies, and are
 working only in simulation (not on FPGA), you can simply enter a

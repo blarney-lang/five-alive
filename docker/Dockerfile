@@ -19,8 +19,7 @@ RUN apt-get update -y \
                           gcc-multilib gcc cmake sudo wget vim \
                           curl tmux git bc build-essential curl \
                           libffi-dev libffi8ubuntu1 libgmp-dev \
-                          libgmp10 libncurses-dev libncurses5 libtinfo5 \
-                          z3
+                          libgmp10 libncurses-dev libncurses5 libtinfo5
 
 # Append any packages you need here
 # RUN apt-get update -y \
