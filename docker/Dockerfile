@@ -17,7 +17,9 @@ RUN apt-get update -y \
                           libgmp-dev python3 python3-pip g++\
                           clang llvm lld clang-tidy clang-format \
                           gcc-multilib gcc cmake sudo wget vim \
-                          curl tmux git bc
+                          curl tmux git bc build-essential curl \
+                          libffi-dev libffi8ubuntu1 libgmp-dev \
+                          libgmp10 libncurses-dev libncurses5 libtinfo5
 
 # Append any packages you need here
 # RUN apt-get update -y \
