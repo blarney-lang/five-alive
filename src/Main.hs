@@ -608,17 +608,20 @@ makeMicrocontroller avlUARTIns = mdo
   (fromUART, avlUARTOuts) <- makeJTAGUART toUART avlUARTIns
   -- Instruction set
   let iset = instrSet csrUnit instrCount
+  -- Log (base 2) of instruction size in bytes
+  let logInstrLen :: Int = 2
+  let instrLen = fromIntegral (2 ^ logInstrLen)
   -- Classic 5-stage pipeline
   s <- makeClassic
     PipelineParams {
       initPC         = 0
-    , instrLen       = 4
+    , instrLen       = instrLen
     , imem           = imem
     , dmem           = dmem
     , instrSet       = iset
     , makeBranchPred = if useBranchPred
-                         then makeBTBPredictor @8 4
-                         else makeNaivePredictor 4
+                         then makeBTBPredictor @8 logInstrLen
+                         else makeNaivePredictor instrLen
     , makeRegFile    = if useForwarding
                          then makeForwardingRegFile rmem iset
                          else makeBasicRegFile rmem iset
