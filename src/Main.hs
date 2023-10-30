@@ -452,89 +452,87 @@ loadMux respData a w isUnsigned =
 -- Tightly-coupled memories
 -- ========================
 
+-- Instruction memory interface
+type IMem = Server (Bit XLen) (Bit XLen)
+
 -- Instruction tightly-coupled memory
-type ITCM = Server (Bit XLen) (Bit XLen)
+-- Parameterised by 'aw' the address width of the BTB
+makeITCM :: forall aw. KnownNat aw => String -> Module IMem
+makeITCM initFile = do
+  -- State
+  ram   :: RAM (Bit aw) (Bit XLen) <- makeDualRAMInit initFile
+  put   :: Wire (Bit XLen)         <- makeWire dontCare
+  queue :: Queue (Bit 0)           <- makePipelineQueue 1
 
-makeITCM :: Int -> String -> Module ITCM
-makeITCM logSize initFile =
-  -- Determine address width at type level
-  liftNat logSize \(_ :: Proxy addrW) -> do
+  always do
+    if put.active
+      then do
+        let idx = untypedSlice (valueOf @aw + 1, 2) put.val
+        ram.load idx
+        queue.enq dontCare
+      else do
+        ram.preserveOut
 
-    -- State
-    ram   :: RAM (Bit addrW) (Bit XLen) <- makeDualRAMInit initFile
-    put   :: Wire (Bit XLen)            <- makeWire dontCare
-    queue :: Queue (Bit 0)              <- makePipelineQueue 1
+  return
+    Server {
+      reqs =
+        Sink {
+          canPut = queue.notFull
+        , put    = \addr -> do put <== addr
+        }
+    , resps =
+        Source { 
+          canPeek = queue.canDeq
+        , peek    = ram.out
+        , consume = queue.deq
+        }
+    }
 
-    always do
-      if put.active
-        then do
-          queue.enq dontCare
-          ram.load (truncateCast (upper put.val :: Bit (XLen-2)))
-        else do
-          ram.preserveOut
-
-    return
-      Server {
-        reqs =
-          Sink {
-            canPut = queue.notFull
-          , put    = \addr -> do put <== addr
-          }
-      , resps =
-          Source { 
-            canPeek = queue.canDeq
-          , peek    = ram.out
-          , consume = queue.deq
-          }
-      }
+-- Data memory interface
+type DMem = Server MemReq (Bit XLen)
 
 -- Data tightly-coupled memory
-type DTCM = Server MemReq (Bit XLen)
+makeDTCM :: forall aw. KnownNat aw => String -> Module DMem
+makeDTCM initFile = do
+  -- State
+  ram   :: RAMBE aw 4    <- makeRAMInitBE initFile
+  put   :: Wire MemReq   <- makeWire dontCare
+  queue :: Queue MemReq  <- makePipelineQueue 1
 
-makeDTCM :: Int -> String -> Module DTCM
-makeDTCM logSize initFile =
-  -- Determine address width at type level
-  liftNat logSize \(_ :: Proxy addrW) -> do
+  always do
+    if put.active
+      then do
+        let req = put.val
+        let idx = untypedSlice (valueOf @aw + 1, 2) req.addr
+        let byteEn = genByteEnable req.accessWidth req.addr
+        let writeVal = writeAlign req.accessWidth req.payload
+        if req.op .==. memLoadOp
+          then do
+            ram.loadBE idx
+            queue.enq req
+          else do
+            ram.storeBE idx byteEn writeVal
+            ram.preserveOutBE
+      else do
+        ram.preserveOutBE
 
-    -- State
-    ram   :: RAMBE addrW 4 <- makeRAMInitBE initFile
-    put   :: Wire MemReq   <- makeWire dontCare
-    queue :: Queue MemReq  <- makePipelineQueue 1
-
-    always do
-      if put.active
-        then do
-          let req = put.val
-          let addr = truncateCast (upper req.addr :: Bit (XLen-2))
-          let byteEn = genByteEnable req.accessWidth req.addr
-          let writeVal = writeAlign req.accessWidth req.payload
-          if req.op .==. memLoadOp
-            then do
-              ram.loadBE addr
-              queue.enq req
-            else do
-              ram.storeBE addr byteEn writeVal
-              ram.preserveOutBE
-        else do
-          ram.preserveOutBE
-
-    return
-      Server {
-        reqs =
-          Sink {
-            canPut = queue.notFull
-          , put    = \req -> do put <== req
-          }
-      , resps =
-          Source { 
-            canPeek = queue.canDeq
-          , peek    = loadMux ram.outBE
-                              (truncate queue.first.addr)
-                              queue.first.accessWidth
-                              queue.first.isUnsigned
-          , consume = queue.deq
-          }
-      }
+  return
+    Server {
+      reqs =
+        Sink {
+          canPut = queue.notFull
+        , put    = \req -> do put <== req
+        }
+    , resps =
+        Source { 
+          canPeek = queue.canDeq
+        , peek    = loadMux ram.outBE
+                            (truncate queue.first.addr)
+                            queue.first.accessWidth
+                            queue.first.isUnsigned
+        , consume = queue.deq
+        }
+    }
 
 -- Control/status registers
 -- ========================
@@ -594,8 +592,8 @@ makeMicrocontroller avlUARTIns = mdo
   let useBranchPred = True
   -- 16KiB each for instruction memory and data memory
   -- (We assume these are the same size to avoid explicit memory mapping)
-  imem <- makeITCM 12 "imem.mif"
-  dmem <- makeDTCM 12 "dmem.mif"
+  imem <- makeITCM @12 "imem.mif"
+  dmem <- makeDTCM @12 "dmem.mif"
   -- Register memory
   rmem <- if useForwarding
             then makeForwardingRegMemRAM 2
