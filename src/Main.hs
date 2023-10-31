@@ -461,24 +461,17 @@ makeITCM :: forall aw. KnownNat aw => String -> Module IMem
 makeITCM initFile = do
   -- State
   ram   :: RAM (Bit aw) (Bit XLen) <- makeDualRAMInit initFile
-  put   :: Wire (Bit XLen)         <- makeWire dontCare
   queue :: Queue (Bit 0)           <- makePipelineQueue 1
-
-  always do
-    if put.active
-      then do
-        let idx = untypedSlice (valueOf @aw + 1, 2) put.val
-        ram.load idx
-        queue.enq dontCare
-      else do
-        ram.preserveOut
 
   return
     Server {
       reqs =
         Sink {
           canPut = queue.notFull
-        , put    = \addr -> do put <== addr
+        , put = \addr -> do
+            let idx = untypedSlice (valueOf @aw + 1, 2) addr
+            ram.load idx
+            queue.enq dontCare
         }
     , resps =
         Source { 
@@ -500,21 +493,17 @@ makeDTCM initFile = do
   queue :: Queue MemReq  <- makePipelineQueue 1
 
   always do
-    if put.active
-      then do
-        let req = put.val
-        let idx = untypedSlice (valueOf @aw + 1, 2) req.addr
-        let byteEn = genByteEnable req.accessWidth req.addr
-        let writeVal = writeAlign req.accessWidth req.payload
-        if req.op .==. memLoadOp
-          then do
-            ram.loadBE idx
-            queue.enq req
-          else do
-            ram.storeBE idx byteEn writeVal
-            ram.preserveOutBE
-      else do
-        ram.preserveOutBE
+    when put.active do
+      let req = put.val
+      let idx = untypedSlice (valueOf @aw + 1, 2) req.addr
+      let byteEn = genByteEnable req.accessWidth req.addr
+      let writeVal = writeAlign req.accessWidth req.payload
+      if req.op .==. memLoadOp
+        then do
+          ram.loadBE idx
+          queue.enq req
+        else do
+          ram.storeBE idx byteEn writeVal
 
   return
     Server {
