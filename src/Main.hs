@@ -144,6 +144,7 @@ data Instr =
   , accessWidth :: Bit 2
   , isUnsigned  :: Bit 1
   , isMemAccess :: Bit 1
+  , canBranch   :: Bit 1
   }
   deriving (Generic, Bits)
 
@@ -165,6 +166,7 @@ decodeInstr instr =
   , accessWidth = getBitFieldSel selMap "aw" instr
   , isUnsigned  = getBitFieldSel selMap "ul" instr
   , isMemAccess = opcode `is` [LOAD, STORE, FENCE]
+  , canBranch   = opcode `is` [JAL, JALR, BEQ, BNE, BLT, BLTU, BGE, BGEU]
   }
   where
     regDest            = getBitFieldSel selMap "rd" instr :: RegId
@@ -266,129 +268,125 @@ instrSet csrUnit instrCount =
   , getSrcs      = \i -> [i.rs1, i.rs2]
   , numSrcs      = 2
   , isMemAccess  = \i -> i.isMemAccess
+  , canBranch    = \i -> i.canBranch
   , decode       = decodeInstr
-  , makeExecUnit = makeRV32IExecUnit csrUnit instrCount
+  , execute      = executeInstr
   }
+ where
+   executeInstr instr s = do
+     -- Operands
+     let [opr1, opr2] = s.operands
 
--- Execution unit
-makeRV32IExecUnit ::
-  CSRUnit -> Reg (Bit XLen) -> Module (ExecUnit XLen Instr MemReq)
-makeRV32IExecUnit csrUnit instrCount = return (ExecUnit issue)
-  where
-    issue instr s = do
-      -- Operands
-      let [opr1, opr2] = s.operands
+     -- Second operand
+     let opr2orImm = if instr.imm.valid then instr.imm.val else opr2
 
-      -- Second operand
-      let opr2orImm = if instr.imm.valid then instr.imm.val else opr2
+     -- Add/sub/compare unit
+     let AddOuts sum less equal = addUnit 
+           AddIns {
+             addSub = inv (instr.opcode `is` [ADD])
+           , addUnsigned = instr.opcode `is` [SLTU, BLTU, BGEU]
+           , addOpA = opr1
+           , addOpB = opr2orImm
+           }
 
-      -- Add/sub/compare unit
-      let AddOuts sum less equal = addUnit 
-            AddIns {
-              addSub = inv (instr.opcode `is` [ADD])
-            , addUnsigned = instr.opcode `is` [SLTU, BLTU, BGEU]
-            , addOpA = opr1
-            , addOpB = opr2orImm
-            }
+     when (instr.opcode `is` [ADD, SUB]) do
+       s.result <== truncate sum
 
-      when (instr.opcode `is` [ADD, SUB]) do
-        s.result <== truncate sum
+     when (instr.opcode `is` [SLT, SLTU]) do
+       s.result <== zeroExtend less
 
-      when (instr.opcode `is` [SLT, SLTU]) do
-        s.result <== zeroExtend less
+     when (instr.opcode `is` [AND]) do
+       s.result <== opr1 .&. opr2orImm
 
-      when (instr.opcode `is` [AND]) do
-        s.result <== opr1 .&. opr2orImm
+     when (instr.opcode `is` [OR]) do
+       s.result <== opr1 .|. opr2orImm
 
-      when (instr.opcode `is` [OR]) do
-        s.result <== opr1 .|. opr2orImm
+     when (instr.opcode `is` [XOR]) do
+       s.result <== opr1 .^. opr2orImm
 
-      when (instr.opcode `is` [XOR]) do
-        s.result <== opr1 .^. opr2orImm
+     when (instr.opcode `is` [LUI]) do
+       s.result <== opr2orImm
 
-      when (instr.opcode `is` [LUI]) do
-        s.result <== opr2orImm
+     -- Barrel shifter
+     let shiftAmount = slice @4 @0 opr2orImm
 
-      -- Barrel shifter
-      let shiftAmount = slice @4 @0 opr2orImm
+     when (instr.opcode `is` [SLL]) do
+       s.result <== opr1 .<<. shiftAmount
 
-      when (instr.opcode `is` [SLL]) do
-        s.result <== opr1 .<<. shiftAmount
+     when (instr.opcode `is` [SRL, SRA]) do
+       let ext = instr.opcode `is` [SRA] ? (at @31 opr1, 0)
+       let opr1Ext = ext # opr1
+       s.result <== truncate (opr1Ext .>>>. shiftAmount)
 
-      when (instr.opcode `is` [SRL, SRA]) do
-        let ext = instr.opcode `is` [SRA] ? (at @31 opr1, 0)
-        let opr1Ext = ext # opr1
-        s.result <== truncate (opr1Ext .>>>. shiftAmount)
+     let branch =
+           orList [
+             instr.opcode `is` [BEQ] .&. equal
+           , instr.opcode `is` [BNE] .&. inv equal
+           , instr.opcode `is` [BLT, BLTU] .&. less
+           , instr.opcode `is` [BGE, BGEU] .&. inv less
+           ]
 
-      let branch =
-            orList [
-              instr.opcode `is` [BEQ] .&. equal
-            , instr.opcode `is` [BNE] .&. inv equal
-            , instr.opcode `is` [BLT, BLTU] .&. less
-            , instr.opcode `is` [BGE, BGEU] .&. inv less
-            ]
+     when branch do
+       s.pc <== s.pc.val + signExtend instr.off
 
-      when branch do
-        s.pc <== s.pc.val + signExtend instr.off
+     let pcNew = s.pc.val + opr2orImm
+     when (instr.opcode `is` [AUIPC]) do
+       s.result <== pcNew
 
-      let pcNew = s.pc.val + opr2orImm
-      when (instr.opcode `is` [AUIPC]) do
-        s.result <== pcNew
+     when (instr.opcode `is` [JAL]) do
+       s.pc <== pcNew
 
-      when (instr.opcode `is` [JAL]) do
-        s.pc <== pcNew
+     let plus = opr1 + opr2orImm
+     when (instr.opcode `is` [JALR]) do
+       s.pc <== truncateLSB plus # (0 :: Bit 1)
 
-      let plus = opr1 + opr2orImm
-      when (instr.opcode `is` [JALR]) do
-        s.pc <== truncateLSB plus # (0 :: Bit 1)
+     when (instr.opcode `is` [JAL, JALR]) do
+       s.result <== s.pc.val + 4
 
-      when (instr.opcode `is` [JAL, JALR]) do
-        s.result <== s.pc.val + 4
+     when (instr.opcode `is` [ECALL]) do
+       return ()
 
-      when (instr.opcode `is` [ECALL]) do
-        return ()
+     when (instr.opcode `is` [EBREAK]) do
+       return ()
 
-      when (instr.opcode `is` [EBREAK]) do
-        return ()
+     -- Memory fence
+     when (instr.opcode `is` [FENCE]) do
+       return ()
 
-      -- Memory fence
-      when (instr.opcode `is` [FENCE]) do
-        return ()
+     -- Control/status registers
+     when (instr.opcode `is` [CSRRW, CSRRS, CSRRC]) do
+       -- Condition for reading CSR
+       let doRead = instr.opcode `is` [CSRRW] ? (instr.rd.val .!=. 0, true)
+       -- Read CSR
+       x <- whenAction doRead do csrUnit.read instr.csr
+       s.result <== x
+       -- Condition for writing CSR
+       let rs1 = instr.rs1.val
+       let doWrite = instr.opcode `is` [CSRRS, CSRRC] ? (rs1 .!=. 0, true)
+       -- Determine operand
+       let operand = instr.csrI ? (zeroExtend rs1, opr1)
+       -- Data to write for CSRRS/CSRRC
+       let maskedData = fromBitList
+             [ cond ? (instr.opcode `is` [CSRRS], old)
+             | (old, cond) <- zip (toBitList x) (toBitList operand) ]
+       -- Data to write
+       let writeData = instr.opcode `is` [CSRRW] ? (operand, maskedData)
+       -- Write CSR
+       when doWrite do csrUnit.write instr.csr writeData
 
-      -- Control/status registers
-      when (instr.opcode `is` [CSRRW, CSRRS, CSRRC]) do
-        -- Condition for reading CSR
-        let doRead = instr.opcode `is` [CSRRW] ? (instr.rd.val .!=. 0, true)
-        -- Read CSR
-        x <- whenAction doRead do csrUnit.read instr.csr
-        s.result <== x
-        -- Condition for writing CSR
-        let rs1 = instr.rs1.val
-        let doWrite = instr.opcode `is` [CSRRS, CSRRC] ? (rs1 .!=. 0, true)
-        -- Determine operand
-        let operand = instr.csrI ? (zeroExtend rs1, opr1)
-        -- Data to write for CSRRS/CSRRC
-        let maskedData = fromBitList
-              [ cond ? (instr.opcode `is` [CSRRS], old)
-              | (old, cond) <- zip (toBitList x) (toBitList operand) ]
-        -- Data to write
-        let writeData = instr.opcode `is` [CSRRW] ? (operand, maskedData)
-        -- Write CSR
-        when doWrite do csrUnit.write instr.csr writeData
+     -- Memory access
+     when (instr.opcode `is` [LOAD, STORE]) do
+       s.memReq <==
+         MemReq {
+           op = if instr.opcode `is` [LOAD] then memLoadOp else memStoreOp
+         , addr = plus
+         , payload = opr2
+         , accessWidth = instr.accessWidth
+         , isUnsigned = instr.isUnsigned
+         }
 
-      -- Memory access
-      when (instr.opcode `is` [LOAD, STORE]) do
-        s.memReq <==
-          MemReq {
-            op = if instr.opcode `is` [LOAD] then memLoadOp else memStoreOp
-          , addr = plus
-          , payload = opr2
-          , accessWidth = instr.accessWidth
-          , isUnsigned = instr.isUnsigned
-          }
-
-      -- Increment instruction counter
-      instrCount <== instrCount.val + 1
+     -- Increment instruction counter
+     instrCount <== instrCount.val + 1
 
 -- Memory alignment helpers
 -- ========================
@@ -583,18 +581,26 @@ makeMicrocontroller avlUARTIns = mdo
   -- (We assume these are the same size to avoid explicit memory mapping)
   imem <- makeITCM @12 "imem.mif"
   dmem <- makeDTCM @12 "dmem.mif"
+  -- Instruction set
+  let iset = instrSet csrUnit instrCount
   -- Register memory
   rmem <- if useForwarding
             then makeForwardingRegMemRAM 2
             else makeRegMemRAM 2
+  -- Register file
+  rf <- if useForwarding
+          then makeForwardingRegFile rmem iset s
+          else makeBasicRegFile rmem iset s
+  -- Branch predictor
+  bpred <- if useBranchPred
+             then makeBTBPredictor @8 logInstrLen iset s
+             else makeNaivePredictor instrLen s
   -- Instruction counter
   instrCount <- makeReg 0
   -- CSR unit
   (csrUnit, toUART) <- makeCSRUnit fromUART instrCount.val
   -- JTAG UART
   (fromUART, avlUARTOuts) <- makeJTAGUART toUART avlUARTIns
-  -- Instruction set
-  let iset = instrSet csrUnit instrCount
   -- Log (base 2) of instruction size in bytes
   let logInstrLen :: Int = 2
   let instrLen = fromIntegral (2 ^ logInstrLen)
@@ -606,12 +612,8 @@ makeMicrocontroller avlUARTIns = mdo
     , imem           = imem
     , dmem           = dmem
     , instrSet       = iset
-    , makeBranchPred = if useBranchPred
-                         then makeBTBPredictor @8 logInstrLen
-                         else makeNaivePredictor instrLen
-    , makeRegFile    = if useForwarding
-                         then makeForwardingRegFile rmem iset
-                         else makeBasicRegFile rmem iset
+    , branchPred     = bpred
+    , regFile        = rf
     }
   return avlUARTOuts
 
