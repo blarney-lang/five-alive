@@ -604,17 +604,21 @@ makeMicrocontroller avlUARTIns = mdo
   -- Log (base 2) of instruction size in bytes
   let logInstrLen :: Int = 2
   let instrLen = fromIntegral (2 ^ logInstrLen)
+  -- Pipeline parameters
+  let params = 
+        PipelineParams {
+          initPC         = 0
+        , instrLen       = instrLen
+        , imem           = imem
+        , dmem           = dmem
+        , instrSet       = iset
+        , branchPred     = bpred
+        , regFile        = rf
+        }
+  -- Pipeline state
+  s <- makePipelineState params
   -- Classic 5-stage pipeline
-  s <- makeClassic
-    PipelineParams {
-      initPC         = 0
-    , instrLen       = instrLen
-    , imem           = imem
-    , dmem           = dmem
-    , instrSet       = iset
-    , branchPred     = bpred
-    , regFile        = rf
-    }
+  makePipeline params s
   return avlUARTOuts
 
 -- Main
