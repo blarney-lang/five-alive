@@ -589,12 +589,12 @@ makeMicrocontroller avlUARTIns = mdo
             else makeRegMemRAM 2
   -- Register file
   rf <- if useForwarding
-          then makeForwardingRegFile rmem iset s
-          else makeBasicRegFile rmem iset s
+          then makeForwardingRegFile rmem params s
+          else makeBasicRegFile rmem params s
   -- Branch predictor
   bpred <- if useBranchPred
-             then makeBTBPredictor @8 logInstrLen iset s
-             else makeNaivePredictor instrLen s
+             then makeBTBPredictor @8 params s
+             else makeNaivePredictor params s
   -- Instruction counter
   instrCount <- makeReg 0
   -- CSR unit
@@ -608,7 +608,7 @@ makeMicrocontroller avlUARTIns = mdo
   let params = 
         PipelineParams {
           initPC         = 0
-        , instrLen       = instrLen
+        , logInstrBytes  = logInstrLen
         , imem           = imem
         , dmem           = dmem
         , instrSet       = iset
