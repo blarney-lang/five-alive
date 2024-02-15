@@ -607,8 +607,7 @@ makeMicrocontroller avlUARTIns = mdo
   -- Pipeline parameters
   let params = 
         PipelineParams {
-          initPC         = 0
-        , logInstrBytes  = logInstrLen
+          logInstrBytes  = logInstrLen
         , imem           = imem
         , dmem           = dmem
         , instrSet       = iset
@@ -616,7 +615,7 @@ makeMicrocontroller avlUARTIns = mdo
         , regFile        = rf
         }
   -- Pipeline state
-  s <- makePipelineState params
+  s <- makePipelineState 0
   -- Classic 5-stage pipeline
   makePipeline params s
   return avlUARTOuts
