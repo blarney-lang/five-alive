@@ -271,6 +271,7 @@ instrSet csrUnit instrCount =
   , canBranch    = \i -> i.canBranch
   , decode       = decodeInstr
   , execute      = executeInstr
+  , incPC        = 4
   }
  where
    executeInstr instr s = do
@@ -601,14 +602,10 @@ makeMicrocontroller avlUARTIns = mdo
   (csrUnit, toUART) <- makeCSRUnit fromUART instrCount.val
   -- JTAG UART
   (fromUART, avlUARTOuts) <- makeJTAGUART toUART avlUARTIns
-  -- Log (base 2) of instruction size in bytes
-  let logInstrLen :: Int = 2
-  let instrLen = fromIntegral (2 ^ logInstrLen)
   -- Pipeline parameters
   let params = 
         PipelineParams {
-          logInstrBytes  = logInstrLen
-        , imem           = imem
+          imem           = imem
         , dmem           = dmem
         , instrSet       = iset
         , branchPred     = bpred
