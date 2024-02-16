@@ -590,12 +590,12 @@ makeMicrocontroller avlUARTIns = mdo
             else makeRegMemRAM 2
   -- Register file
   rf <- if useForwarding
-          then makeForwardingRegFile rmem params s
-          else makeBasicRegFile rmem params s
+          then makeForwardingRegFile rmem iset s
+          else makeBasicRegFile rmem iset s
   -- Branch predictor
   bpred <- if useBranchPred
-             then makeBTBPredictor @8 params s
-             else makeNaivePredictor params s
+             then makeBTBPredictor @8 iset s
+             else makeNaivePredictor iset s
   -- Instruction counter
   instrCount <- makeReg 0
   -- CSR unit
@@ -603,18 +603,17 @@ makeMicrocontroller avlUARTIns = mdo
   -- JTAG UART
   (fromUART, avlUARTOuts) <- makeJTAGUART toUART avlUARTIns
   -- Pipeline parameters
-  let params = 
-        PipelineParams {
+  let ifc = 
+        PipelineInterface {
           imem           = imem
         , dmem           = dmem
-        , instrSet       = iset
         , branchPred     = bpred
         , regFile        = rf
         }
   -- Pipeline state
   s <- makePipelineState 0
   -- Classic 5-stage pipeline
-  makePipeline params s
+  makePipeline ifc iset s
   return avlUARTOuts
 
 -- Main
