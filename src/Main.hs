@@ -267,7 +267,6 @@ instrSet csrUnit instrCount =
     getDest      = \i -> i.rd
   , getSrcs      = \i -> [i.rs1, i.rs2]
   , isMemAccess  = \i -> i.isMemAccess
-  , canBranch    = \i -> i.canBranch
   , decode       = decodeInstr
   , execute      = executeInstr
   , incPC        = 4
@@ -593,7 +592,7 @@ makeMicrocontroller avlUARTIns = mdo
           else makeBasicRegFile rmem iset s
   -- Branch predictor
   bpred <- if useBranchPred
-             then makeBTBPredictor @8 iset s
+             then makeBTBPredictor @8 (.canBranch) iset s
              else makeNaivePredictor iset s
   -- Instruction counter
   instrCount <- makeReg 0
