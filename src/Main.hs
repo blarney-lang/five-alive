@@ -266,7 +266,6 @@ instrSet csrUnit instrCount =
   InstrSet {
     getDest      = \i -> i.rd
   , getSrcs      = \i -> [i.rs1, i.rs2]
-  , numSrcs      = 2
   , isMemAccess  = \i -> i.isMemAccess
   , canBranch    = \i -> i.canBranch
   , decode       = decodeInstr
