@@ -601,8 +601,8 @@ makeMicrocontroller avlUARTIns = mdo
   -- JTAG UART
   (fromUART, avlUARTOuts) <- makeJTAGUART toUART avlUARTIns
   -- Pipeline parameters
-  let ifc = 
-        PipelineInterface {
+  let params = 
+        PipelineParams {
           imem           = imem
         , dmem           = dmem
         , branchPred     = bpred
@@ -611,7 +611,7 @@ makeMicrocontroller avlUARTIns = mdo
   -- Pipeline state
   s <- makePipelineState 0
   -- Classic 5-stage pipeline
-  makePipeline ifc iset s
+  makePipeline iset params s
   return avlUARTOuts
 
 -- Main
