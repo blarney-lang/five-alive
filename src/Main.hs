@@ -265,8 +265,9 @@ instrSet ::
 instrSet csrUnit instrCount =
   InstrSet {
     getDest      = \i -> i.rd
-  , getSrcs      = \i -> [i.rs1, i.rs2]
+  , getSrcs      = \i -> (i.rs1, i.rs2)
   , isMemAccess  = \i -> i.isMemAccess
+  , canBranch    = \i -> i.canBranch
   , decode       = decodeInstr
   , execute      = executeInstr
   , incPC        = 4
@@ -274,7 +275,7 @@ instrSet csrUnit instrCount =
  where
    executeInstr instr s = do
      -- Operands
-     let [opr1, opr2] = s.operands
+     let (opr1, opr2) = s.operands
 
      -- Second operand
      let opr2orImm = if instr.imm.valid then instr.imm.val else opr2
@@ -572,8 +573,6 @@ makeCSRUnit fromUART instrCount = do
 
 makeMicrocontroller :: AvalonJTAGUARTIns -> Module AvalonJTAGUARTOuts
 makeMicrocontroller avlUARTIns = mdo
-  -- Use register forwarding?
-  let useForwarding = True
   -- Use branch target prediction?
   let useBranchPred = True
   -- 16KiB each for instruction memory and data memory
@@ -582,18 +581,12 @@ makeMicrocontroller avlUARTIns = mdo
   dmem <- makeDTCM @12 "dmem.mif"
   -- Instruction set
   let iset = instrSet csrUnit instrCount
-  -- Register memory
-  rmem <- if useForwarding
-            then makeForwardingRegMemRAM 2
-            else makeRegMemRAM 2
   -- Register file
-  rf <- if useForwarding
-          then makeForwardingRegFile rmem iset s
-          else makeBasicRegFile rmem iset s
+  rf <- makeRegMemRAM
   -- Branch predictor
   bpred <- if useBranchPred
-             then makeBTBPredictor @8 (.canBranch) iset s
-             else makeNaivePredictor iset s
+             then makeBTBPredictor 8 iset
+             else makeNaivePredictor iset
   -- Instruction counter
   instrCount <- makeReg 0
   -- CSR unit
@@ -603,15 +596,14 @@ makeMicrocontroller avlUARTIns = mdo
   -- Pipeline parameters
   let params = 
         PipelineParams {
-          imem           = imem
+          iset           = iset
+        , imem           = imem
         , dmem           = dmem
         , branchPred     = bpred
         , regFile        = rf
         }
-  -- Pipeline state
-  s <- makePipelineState 0
   -- Classic 5-stage pipeline
-  makePipeline iset params s
+  makePipeline params
   return avlUARTOuts
 
 -- Main
