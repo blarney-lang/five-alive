@@ -1734,3 +1734,4 @@ set_global_assignment -name IP_FILE ip/DE10_Pro_QSYS/DE10_Pro_QSYS_FiveAlive_0.i
 set_global_assignment -name VERILOG_FILE ../FiveAlive.v
 set_global_assignment -name VERILOG_FILE ./BlockRAMBE.v
 set_global_assignment -name VERILOG_FILE ./BlockRAMDual.v
+set_global_assignment -name VERILOG_FILE ./DE10_Pro.v
