@@ -9,13 +9,9 @@ features:
   * RISC-V instruction set (RV32I) 
   * Formally verified five-stage pipeline
   * Optional register forwarding and branch target prediction
-  * Throughput up to 0.92 IPC on Dhrystone
+  * Instruction throughput up to 1.23 DMIPS/MHz
   * Clock frequency above 200MHz on Intel Stratix 10 FPGA
   * Area requirement under 1000 ALMs
-
-FiveAlive was developed on the [CAPcelerate
-project](https://gow.epsrc.ukri.org/NGBOViewGrant.aspx?GrantRef=EP/V000381/1),
-part of the UKRI's Digital Security by Design programme.
 
 ## Dependencies
 
@@ -91,3 +87,9 @@ Or, if you are feeling brave, simply:
 cd de10-pro-e
 make FIRMWARE=../software/dhrystone run
 ```
+
+## Acknowledgements
+
+FiveAlive was developed on the [CAPcelerate
+project](https://gow.epsrc.ukri.org/NGBOViewGrant.aspx?GrantRef=EP/V000381/1),
+part of the UKRI's Digital Security by Design programme.
