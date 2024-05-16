@@ -8,7 +8,6 @@ source-repository-package
 
 source-repository-package
   type: git
-  --location: https://github.com/blarney-lang/five.git
-  location: git@github.com:blarney-lang/five.git
+  location: https://github.com/blarney-lang/five.git
   tag: main
   subdir: .
